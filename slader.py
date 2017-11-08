@@ -100,9 +100,9 @@ def scrape(isbn):
             section_total = count_total_section_exercises(section)
             section_saved = count_total_section_saved(section)
 
-            for exercise in section["exercises"]:
-                if not exercise["saved"] and exercise["answers"]:  # haven't saved this exercise and there are answers
-                    if save_exercise(isbn, exercise["url"], chapter["chapter"], section["id"], exercise["id"]):
+            for ex in section["exercises"]:
+                if not ex["saved"] and ex["answers"]:  # haven't saved this exercise and there are answers
+                    if save_exercise(isbn, ex["url"], chapter["chapter"], section["id"], ex["id"], ex["answers"]):
                         overall_saved += 1
                         chapter_saved += 1
                         section_saved += 1
@@ -112,11 +112,11 @@ def scrape(isbn):
                         sys.stdout.write((' ' * int(columns)) + '\r')
                         sys.stdout.write("Total %d / %d\r\n" % (overall_saved, overall_total))
                         sys.stdout.write("\033[F\033[F\033[F\033[F")  # Go to previous line.
-                        exercise["saved"] = True
+                        ex["saved"] = True
                         save_json_doc(doc, isbn)
 
 
-def save_exercise(isbn, url, chapter, section, exercise):
+def save_exercise(isbn, url, chapter, section, exercise, solutions):
     import dryscrape
 
     if 'linux' in sys.platform:
@@ -141,7 +141,18 @@ def save_exercise(isbn, url, chapter, section, exercise):
         session.set_timeout(DRYSCRAPE_TIMEOUT)
         session.visit(url)
         session.eval_script(js)
-        session.render(filename)
+
+        js = open('hide_all.js', 'r').read()
+        session.eval_script(js)
+
+        # toggle each solution on. take a screenshot. toggle off. repeat.
+        for i in range(solutions):
+            js = "document.getElementsByClassName(\"solution user-content\")[%d].style.visibility=\"visible\"" % i
+            session.eval_script(js)
+            session.render(filename.replace(".png", ".s%d.png" % i))
+            js = "document.getElementsByClassName(\"solution user-content\")[%d].style.visibility=\"hidden\"" % i
+            session.eval_script(js)
+
         time.sleep(1)
         return True
     except socket.error:

@@ -24,3 +24,4 @@ removeElementsByClass("right");
 
 document.getElementsByTagName("footer")[document.getElementsByTagName("footer").length-1].remove();
 document.getElementsByTagName("header")[0].remove();
+
